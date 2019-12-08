@@ -1,39 +1,575 @@
-<!doctype html>
-<html>
-  <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-      #messages { margin-bottom: 40px }
-    </style>
-  </head>
-  <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
-    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script>
-      $(function () {
-        var socket = io();
-        $('form').submit(function(){
-          socket.emit('chat message', $('#m').val());
-          $('#m').val('');
-          return false;
-        });
-        socket.on('chat message', function(msg){
-          $('#messages').append($('<li>').text(msg));
-          window.scrollTo(0, document.body.scrollHeight);
-        });
-      });
-    </script>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="utf-8">
+   <title>Chatroom</title>
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+   <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+   <style type="text/css">
+      html,
+      body,
+      div,
+      span {
+         height: 100%;
+         width: 100%;
+         overflow: hidden;
+         padding: 0;
+         margin: 0;
+         box-sizing: border-box;
+      }
+
+      body {
+         background: url("http://shurl.esy.es/y") no-repeat fixed center;
+         background-size: cover;
+      }
+
+      .fa-2x {
+         font-size: 1.5em;
+      }
+
+      .app {
+         position: relative;
+         overflow: hidden;
+         height: calc(100%);
+         margin: auto;
+         padding: 0;
+         box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .06), 0 2px 5px 0 rgba(0, 0, 0, .2);
+      }
+
+      .app-one {
+         background-color: #f7f7f7;
+         height: 100%;
+         overflow: hidden;
+         margin: 0;
+         padding: 0;
+         box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .06), 0 2px 5px 0 rgba(0, 0, 0, .2);
+      }
+
+      .side {
+         padding: 0;
+         margin: 0;
+         height: 100%;
+      }
+      .side-one {
+         padding: 0;
+         margin: 0;
+         height: 100%;
+         width: 100%;
+         z-index: 1;
+         position: relative;
+         display: block;
+         top: 0;
+      }
+
+      .side-two {
+         padding: 0;
+         margin: 0;
+         height: 100%;
+         width: 100%;
+         z-index: 2;
+         position: relative;
+         top: -100%;
+         left: -100%;
+         -webkit-transition: left 0.3s ease;
+         transition: left 0.3s ease;
+
+      }
+
+
+      .heading {
+         padding: 10px 16px 10px 15px;
+         margin: 0;
+         height: 60px;
+         width: 100%;
+         background-color: #eee;
+         z-index: 1000;
+      }
+
+      .heading-avatar {
+         padding: 0;
+         cursor: pointer;
+
+      }
+
+      .heading-avatar-icon img {
+         border-radius: 50%;
+         height: 40px;
+         width: 40px;
+      }
+
+      .heading-name {
+         padding: 0 !important;
+         cursor: pointer;
+      }
+
+      .heading-name-meta {
+         font-weight: 700;
+         font-size: 100%;
+         padding: 5px;
+         padding-bottom: 0;
+         text-align: left;
+         text-overflow: ellipsis;
+         white-space: nowrap;
+         color: #000;
+         display: block;
+      }
+      .heading-online {
+         display: none;
+         padding: 0 5px;
+         font-size: 12px;
+         color: #93918f;
+      }
+      .heading-compose {
+         padding: 0;
+      }
+
+      .heading-compose i {
+         text-align: center;
+         padding: 5px;
+         color: #93918f;
+         cursor: pointer;
+      }
+
+      .heading-dot {
+         padding: 0;
+         margin-left: 10px;
+      }
+
+      .heading-dot i {
+         text-align: right;
+         padding: 5px;
+         color: #93918f;
+         cursor: pointer;
+      }
+
+      .searchBox {
+         padding: 0 !important;
+         margin: 0 !important;
+         height: 60px;
+         width: 100%;
+      }
+
+      .searchBox-inner {
+         height: 100%;
+         width: 100%;
+         padding: 10px !important;
+         background-color: #fbfbfb;
+      }
+
+
+/*#searchBox-inner input {
+box-shadow: none;
+}*/
+
+.searchBox-inner input:focus {
+   outline: none;
+   border: none;
+   box-shadow: none;
+}
+
+.sideBar {
+   padding: 0 !important;
+   margin: 0 !important;
+   background-color: #fff;
+   overflow-y: auto;
+   border: 1px solid #f7f7f7;
+   height: calc(100% - 120px);
+}
+
+.sideBar-body {
+   position: relative;
+   padding: 10px !important;
+   border-bottom: 1px solid #f7f7f7;
+   height: 72px;
+   margin: 0 !important;
+   cursor: pointer;
+}
+
+.sideBar-body:hover {
+   background-color: #f2f2f2;
+}
+
+.sideBar-avatar {
+   text-align: center;
+   padding: 0 !important;
+}
+
+.avatar-icon img {
+   border-radius: 50%;
+   height: 49px;
+   width: 49px;
+}
+
+.sideBar-main {
+   padding: 0 !important;
+}
+
+.sideBar-main .row {
+   padding: 0 !important;
+   margin: 0 !important;
+}
+
+.sideBar-name {
+   padding: 10px !important;
+}
+
+.name-meta {
+   font-size: 100%;
+   padding: 1% !important;
+   text-align: left;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   color: #000;
+}
+
+.sideBar-time {
+   padding: 10px !important;
+}
+
+.time-meta {
+   text-align: right;
+   font-size: 12px;
+   padding: 1% !important;
+   color: rgba(0, 0, 0, .4);
+   vertical-align: baseline;
+}
+
+/*New Message*/
+
+.newMessage {
+   padding: 0 !important;
+   margin: 0 !important;
+   height: 100%;
+   position: relative;
+   left: -100%;
+}
+.newMessage-heading {
+   padding: 10px 16px 10px 15px !important;
+   margin: 0 !important;
+   height: 100px;
+   width: 100%;
+   background-color: #00bfa5;
+   z-index: 1001;
+}
+
+.newMessage-main {
+   padding: 10px 16px 0 15px !important;
+   margin: 0 !important;
+   height: 60px;
+   margin-top: 30px !important;
+   width: 100%;
+   z-index: 1001;
+   color: #fff;
+}
+
+.newMessage-title {
+   font-size: 18px;
+   font-weight: 700;
+   padding: 10px 5px !important;
+}
+.newMessage-back {
+   text-align: center;
+   vertical-align: baseline;
+   padding: 12px 5px !important;
+   display: block;
+   cursor: pointer;
+}
+.newMessage-back i {
+   margin: auto !important;
+}
+
+.composeBox {
+   padding: 0 !important;
+   margin: 0 !important;
+   height: 60px;
+   width: 100%;
+}
+
+.composeBox-inner {
+   height: 100%;
+   width: 100%;
+   padding: 10px !important;
+   background-color: #fbfbfb;
+}
+
+.composeBox-inner input:focus {
+   outline: none;
+   border: none;
+   box-shadow: none;
+}
+
+.compose-sideBar {
+   padding: 0 !important;
+   margin: 0 !important;
+   background-color: #fff;
+   overflow-y: auto;
+   border: 1px solid #f7f7f7;
+   height: calc(100% - 160px);
+}
+
+/*Conversation*/
+
+.conversation {
+   padding: 0 !important;
+   margin: 0 !important;
+   height: 100%;
+   /*width: 100%;*/
+   border-left: 1px solid rgba(0, 0, 0, .08);
+   bottom: 0;
+   /*overflow-y: auto;*/
+}
+
+.message {
+   padding: 0 !important;
+   margin: 0 !important;
+   background: url("w.jpg") no-repeat fixed center;
+   background-size: cover;
+   overflow-y: auto;
+   border: 1px solid #f7f7f7;
+   height: calc(100% - 120px);
+}
+.message-previous {
+   margin : 0 !important;
+   padding: 0 !important;
+   height: auto;
+   width: 100%;
+}
+.previous {
+   font-size: 15px;
+   text-align: center;
+   padding: 10px !important;
+   cursor: pointer;
+}
+
+.previous a {
+   text-decoration: none;
+   font-weight: 700;
+}
+
+.message-body {
+   margin: 0 !important;
+   padding: 0 !important;
+   width: auto;
+   height: auto;
+}
+
+.message-main-receiver {
+   /*padding: 10px 20px;*/
+   max-width: 60%;
+}
+
+.message-main-sender {
+   padding: 3px 20px !important;
+   /* margin-left: 40% !important;*/
+   /*max-width: 60%;*/
+}
+
+.message-text {
+   margin: 0 !important;
+   padding: 5px !important;
+   word-wrap:break-word;
+   font-weight: 200;
+   font-size: 14px;
+   padding-bottom: 0 !important;
+}
+
+.message-time {
+   margin: 0 !important;
+   margin-left: 50px !important;
+   font-size: 12px;
+   text-align: right;
+   color: #9a9a9a;
+
+}
+
+.receiver {
+   width: auto !important;
+   padding: 4px 10px 7px !important;
+   border-radius: 10px 10px 10px 0;
+   background: #ffffff;
+   font-size: 12px;
+   word-wrap: break-word;
+   display: inline-block;
+}
+
+.sender {
+   float: right;
+   width: auto !important;
+   background: #dcf8c6;
+   border-radius: 10px 10px 0 10px;
+   padding: 4px 10px 7px !important;
+   font-size: 12px;
+   display: inline-block;
+   word-wrap: break-word;
+}
+
+
+/*Reply*/
+
+.reply {
+   height: 60px;
+   width: 100%;
+   background-color: #f5f1ee;
+   padding: 10px 5px 10px 5px !important;
+   margin: 0 !important;
+   z-index: 1000;
+}
+
+.reply-emojis {
+   padding: 5px !important;
+}
+
+.reply-emojis i {
+   text-align: center;
+   padding: 5px 5px 5px 5px !important;
+   color: #93918f;
+   cursor: pointer;
+}
+
+.reply-recording {
+   padding: 5px !important;
+}
+
+.reply-recording i {
+   text-align: center;
+   padding: 5px !important;
+   color: #93918f;
+   cursor: pointer;
+}
+
+.reply-send {
+   padding: 5px !important;
+}
+
+.reply-send i {
+   text-align: center;
+   padding: 5px !important;
+   color: #93918f;
+   cursor: pointer;
+}
+
+.reply-main {
+   padding: 2px 5px !important;
+}
+
+.reply-main textarea {
+   width: 100%;
+   resize: none;
+   overflow: hidden;
+   padding: 5px !important;
+   outline: none;
+   border: none;
+   text-indent: 5px;
+   box-shadow: none;
+   height: 100%;
+   font-size: 16px;
+}
+
+.reply-main textarea:focus {
+   outline: none;
+   border: none;
+   text-indent: 5px;
+   box-shadow: none;
+}
+
+::-webkit-scrollbar {
+   width: 1px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+  background: #888; 
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555; 
+}
+
+</style>
+</head>
+<body>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+   <div class="container app">
+      <div class="row app-one">
+         <div class="col-sm-12 conversation">
+            <div class="row heading">
+               <div class="col-sm-12">
+                  <h4>Chatroom</h4>
+               </div>
+            </div>
+
+            <div class="row message" id="messages" style="padding:10px !important; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');">
+            </div>
+
+            <div class="row reply">
+               <div class="col-sm-12 col-xs-12" style="padding-left: 0px; padding-right: 0px;">
+                  <form action="">
+                     <input id="comment" class="form-comtrol" type="text" style="height: auto; width: 100%; height: 36px; padding: 10px; border:none;" placeholder="Type a message..." />
+                  </form>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+
+
+   <script src="http://netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+   <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+   <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+   <script type="text/javascript">
+      $(function(){
+         var socket = io();
+         var name = prompt('what is your name ?');
+         user_joined('You joined');
+         socket.emit('new-user', name)
+
+         socket.on('user-connected', function(name){
+            user_joined(name+' connected');
+         })
+
+         $('form').submit(function(){
+            socket.emit('chat-message', $('#comment').val());
+            $('#comment').val('');
+            return false;
+         });
+         socket.on('chat-message', function(msg_data){
+            var msg_direction = 'receiver';
+            if(msg_data.sender == name){
+               msg_direction = 'sender';
+            }
+            var message_to_print = `<div class="row message-body">
+            <div class="col-sm-12 message-main-sender">
+            <div class="`+msg_direction+`">
+            <div class="message-text">`+msg_data.message+`</div>
+            <span class="message-time pull-right">`+msg_data.sender+`</span>
+            </div>
+            </div>
+            </div>`;
+            $('#messages').append(message_to_print);
+            $('#messages').animate({ scrollTop: $(document).height() }, 1000);
+         });
+
+         function user_joined(user_data){
+            var user_joined_data = `<p style="text-align:center;"><span style="background-color:wheat; padding:5px;">`+user_data+`</span></p>`
+            $('#messages').append(user_joined_data);
+            $('#messages').animate({ scrollTop: $(document).height() }, 1000);
+         }
+
+         function appendMessage(message){
+            var message_to_print = `<div class="row message-body">
+            <div class="col-sm-12 message-main-sender">
+            <div class="sender">
+            <div class="message-text">`+msg_data.message+`</div>
+            <span class="message-time pull-right">`+name+`</span>
+            </div>
+            </div>
+            </div>`;
+            $('#messages').append(message_to_print);
+            $('#messages').animate({ scrollTop: $(document).height() }, 1000);
+         }
+      })
+   </script>
+</body>
 </html>
