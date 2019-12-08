@@ -534,6 +534,14 @@ box-shadow: none;
             $('#comment').val('');
             return false;
          });
+
+         function find_height(){
+            var msg_body = $('#messages');
+            var height = msg_body[0].scrollHeight;
+            console.log(height);
+            $('#messages').scrollTop(height);
+         }
+
          socket.on('chat-message', function(msg_data){
             var msg_direction = 'receiver';
             if(msg_data.sender == name){
@@ -548,13 +556,13 @@ box-shadow: none;
             </div>
             </div>`;
             $('#messages').append(message_to_print);
-            $('#messages').animate({ scrollTop: $(document).height() }, 1000);
+            find_height();
          });
 
          function user_joined(user_data){
             var user_joined_data = `<p style="text-align:center;"><span style="background-color:wheat; padding:5px;">`+user_data+`</span></p>`
             $('#messages').append(user_joined_data);
-            $('#messages').animate({ scrollTop: $(document).height() }, 1000);
+            find_height();
          }
 
          function appendMessage(message){
@@ -567,7 +575,7 @@ box-shadow: none;
             </div>
             </div>`;
             $('#messages').append(message_to_print);
-            $('#messages').animate({ scrollTop: $(document).height() }, 1000);
+            find_height();
          }
       })
    </script>
